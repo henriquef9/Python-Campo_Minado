@@ -51,7 +51,7 @@ matriz_cor = [[16,54,168],[22,70,217],[215,184,153],[229,194,159]]
 vetor_sequencia = []
 vetor_sequencia2 = []
 
-
+bombas = 40
 
 # função 
 
@@ -92,33 +92,38 @@ def desenharQuadrados(matriz,matriz_cor):
             cor3,cor4 = cor4, cor3  
               
 
-# bombas            
-def gerar_bombas(matriz):
-    while True:
-        matrizBombas = []
+# bombas        
+def posicao_aleatoria():
+        return random.randint(0,tamanho_matriz-1),random.randint(0,tamanho_matriz-1) 
     
-        for i in range(40):
-            v = matriz[random.randint(0,tamanho_matriz-1)][random.randint(0,tamanho_matriz-1)]
-            v = [v[0],v[1]]
-            matrizBombas.append(v)
-
-        matrizcopia = []
-        for i in matrizBombas:
-            if i not in matrizcopia:
-                matrizcopia.append(i)
-  
-
-        if matrizcopia == matrizBombas:
-            break 
+def gerar_bombas(matriz):
+    global tamanho_matriz, bombas
+    matrizBombas = []
+    # vai guarda linha e coluna da matriz aonde está localizadar a coordenadar, com objetivo de evitar 
+    # reptição de posição x e y das bombas.
+    guarda_LinhaeColuna = []
+    c=0
+    while c < bombas:
+        linha,coluna = posicao_aleatoria()
+        if not [linha,coluna] in guarda_LinhaeColuna:
+            coord = matriz[linha][coluna]
+            matrizBombas.append(coord)
+        else:
+            c-=1   
+        guarda_LinhaeColuna.append([linha,coluna])    
+        c+=1 
         
     return matrizBombas   
 
 def imprimirBombas(matriz):
     for linha in matriz:
         tela.blit(bombear,(linha))   
+       
+        
 
 # melhorar aqui              
 def gerar_numeros(matriz_bombas):
+    global tela_altura, tela_largura
     matriz_numeros = []
     for linha in matriz_bombas:
         matriz_aux = []
@@ -131,7 +136,7 @@ def gerar_numeros(matriz_bombas):
         matriz_aux.append([linha[0]+20,linha[1]])
         matriz_aux.append([linha[0]+20,linha[1]+20])
         for xey in matriz_aux:
-            if 0 <= xey[0] < 500 and 80<= xey[1] <500:
+            if 0 <= xey[0] < tela_largura and 80<= xey[1] < tela_altura:
                 matriz_numeros.append(xey)
 
     # retirar coordenadas onde tem bombas
@@ -217,28 +222,20 @@ def buscarCor(x,y,sequencia_cor):
                 return cor
             c+=1    
 
-def removeBandeira(matriz,x,y):
-    global  matriz_coordenadas, vetor_sequencia2
-    flag= False
-    indexx =0
+def removeBandeira(x,y):
+    global  matriz_coordenadas, vetor_sequencia2,matriz_bandeiras
+    
     # percorre cada coordenada da matriz(matriz_bandeira)
-    for i in range(len(matriz)):
+    for i in range(len(matriz_bandeiras)):
         #condição de para verificar qual foi a bandeira selecionada
-        if matriz[i][0] <= x < matriz[i][0]+20 and  matriz[i][1] <= y < matriz[i][1]+20:
-            #vai pegar o indice da matriz aonde esta a coordenada da bandeira
-            flag=True
-            indexx=i
-            break          
-    
-    
-        
-    if flag:
-        # faz uma função para cor 
-        # aqui vamos buscar a cor do quadrado para desenha ele novamente por cima da bandeira
-        cor = buscarCor(x,y,vetor_sequencia2)
-        #desenha o quadrado novamente
-        pygame.draw.rect(tela,(cor),(matriz[indexx][0],matriz[indexx][1],20,20))
-        return indexx  
+        if matriz_bandeiras[i][0] <= x < matriz_bandeiras[i][0]+20 and  matriz_bandeiras[i][1] <= y < matriz_bandeiras[i][1]+20:
+            # faz uma função para cor 
+            # aqui vamos buscar a cor do quadrado para desenha ele novamente por cima da bandeira
+            cor = buscarCor(x,y,vetor_sequencia2)
+            #desenha o quadrado novamente
+            pygame.draw.rect(tela,(cor),(matriz_bandeiras[i][0],matriz_bandeiras[i][1],20,20))
+            return i         
+
             
 def verificar_objeto(matriz,x,y):
     if matriz != []:
@@ -290,7 +287,7 @@ def quebra_area(x,y):
     if 0<= x < tela_largura and 80 <= y < tela_altura:
         
         if verificar_objeto(matriz_bandeiras,x,y):
-            i = removeBandeira(matriz_bandeiras,x,y)
+            i = removeBandeira(x,y)
             # remove a coordenada da bandeira retirada da matriz_bandeiras
             matriz_bandeiras.pop(i)
             total_de_bandeiras+=1
@@ -327,7 +324,7 @@ def vitoria():
 def reiniciar_jogo():
     global flag, derrota, total_de_bandeiras, matriz_coordenadas, matriz_bombas, matriz_numeros, matriz_imgNumeros, matriz_bandeiras, matriz_quadradosRevelados, tempoInicial, tempoFinal
     derrota = False
-    total_de_bandeiras = 40
+    total_de_bandeiras = bombas
     flag = True
     matriz_coordenadas = gerar_Matriz_Coord(tamanho_matriz)
     matriz_bombas = gerar_bombas(matriz_coordenadas)
@@ -348,11 +345,7 @@ matriz_imgNumeros = carregar_img_numeros(matriz_numeros,matriz_bombas)
 
 flag = True
 derrota = False
-total_de_bandeiras = 40
-
-
-relogio = pygame.time.Clock()
-
+total_de_bandeiras = bombas
 tempoFinal = 0
 
 while True:
@@ -401,12 +394,12 @@ while True:
                     # verificar ser ja tem bandeira
                     if not verificar_objeto(matriz_bandeiras,posx,posy):
                         # verificar ser ja foi colocadar todas bandeiras disponiveis
-                        if total_de_bandeiras > 0:
+                        if total_de_bandeiras > 0 and 0<= posx < tela_largura and 80<= posy <tela_altura:
                             matriz_bandeiras.append(colocarBandeira(matriz_coordenadas,posx,posy))
                             total_de_bandeiras-=1
                     # caso tenha bandeira vai remover ela        
                     else:
-                        i = removeBandeira(matriz_bandeiras,posx,posy)
+                        i = removeBandeira(posx,posy)
                         # remove a coordenada da bandeira da matriz_bandeiras
                         matriz_bandeiras.pop(i)
                         total_de_bandeiras+=1
@@ -425,8 +418,8 @@ while True:
     
     # desenhar os quadrados do jogo uma vez apenas
     if flag:
-        desenharQuadrados(matriz_coordenadas,matriz_cor) 
-        flag= False 
+        desenharQuadrados(matriz_coordenadas,matriz_cor)
+        flag = False
     
     if vitoria():
         font2 = pygame.font.SysFont('arial',30,True,True)
