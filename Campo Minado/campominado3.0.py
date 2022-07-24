@@ -46,6 +46,7 @@ matriz_numeros = []
 matriz_imgNumeros = []
 matriz_quadradosRevelados = []
 
+# azul, azul mais fraco, cinza(uma cor bem proxima ao cinza), bege
 matriz_cor = [[16,54,168],[22,70,217],[215,184,153],[229,194,159]]
 
 vetor_sequencia = []
